@@ -8,29 +8,44 @@ const socket = require('socket.io')(server);
 let rooms = { '1': { 'users': [{ '1': '52352' }, { '3': '5274352' }, { '2': '5232352' }], 'messages': [] }, '2': { 'users': [{ '1': '52352' }, { '3': '5274352' }, { '2': '5232352' }], 'messages': [] } }
 
 socket.on('connection', (io) => {
+    let roomID
     io.on('JOIN', (data) => {
+        roomID = data.id
         io.join(data.id)
         const roomObject = data
         if (rooms.hasOwnProperty(roomObject.id)) {
             // let users = Array.from(rooms[roomObject.id].users)
             let users = Array.from(rooms[roomObject.id].users)
             let userObject = {}
-            userObject[roomObject.username] = io.id
+            userObject[io.id] = roomObject.username
             users[users.length] = userObject
             rooms[roomObject.id].users = users
 
         } else {
             let users = []
             let userObject = {}
-            userObject[roomObject.username] = io.id
+            userObject[io.id] = roomObject.username
             users.push(userObject)
             let messages = []
             rooms[roomObject.id] = {users,messages}
             rooms[roomObject.id].users = users
         }
         const currentRoomUsers = rooms[roomObject.id].users
-        io.to(roomObject.id).broadcast.emit('USER JOINED', currentRoomUsers)
-        console.log(rooms)
+        
+        io.to(roomObject.id).emit('USER JOINED', currentRoomUsers)
+    })
+
+    io.on('disconnect',()=>{
+        let users = []
+        if(rooms[roomID] != undefined){
+            users = rooms[roomID]['users']
+            users.forEach((user, index) => {
+                if(Object.keys(user)[0] == io.id){
+                    users.splice(index, 1);
+                }
+            });
+        }
+        
     })
     
     console.log('user connected', io.id)
@@ -48,24 +63,6 @@ app.get('/rooms', (req, res) => {
 });
 
 app.post('/rooms', (req, res) => {
-    // const roomObject = req.body
-    // if (rooms.hasOwnProperty(roomObject.id)) {
-    //     // let users = Array.from(rooms[roomObject.id].users)
-    //     let users = Array.from(rooms[roomObject.id].users)
-    //     let userObject = {}
-    //     userObject[roomObject.username] = 'asdadasdas'
-    //     users[users.length] = userObject
-    //     rooms[roomObject.id].users = users
-
-    // } else {
-    //     let users = []
-    //     let userObject = {}
-    //     userObject[roomObject.username] = 'asdadasdas'
-    //     users.push(userObject)
-    //     rooms[roomObject.id] = users
-    // }
-
-    
     res.json()
 });
 
