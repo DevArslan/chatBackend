@@ -27,28 +27,26 @@ socket.on('connection', (io) => {
             userObject[io.id] = roomObject.username
             users.push(userObject)
             let messages = []
-            rooms[roomObject.id] = {users,messages}
+            rooms[roomObject.id] = { users, messages }
             rooms[roomObject.id].users = users
         }
         const currentRoomUsers = rooms[roomObject.id].users
-        
-        io.to(roomObject.id).emit('USER JOINED', currentRoomUsers)
+
+        io.to(roomObject.id).broadcast.emit('USERS', currentRoomUsers)
     })
 
-    io.on('disconnect',()=>{
+    io.on('disconnect', () => {
         let users = []
-        if(rooms[roomID] != undefined){
+        if (rooms[roomID] != undefined) {
             users = rooms[roomID]['users']
             users.forEach((user, index) => {
-                if(Object.keys(user)[0] == io.id){
+                if (Object.keys(user)[0] == io.id) {
                     users.splice(index, 1);
                 }
             });
+            io.to(roomID).broadcast.emit(('USERS', users))
         }
-        
     })
-    
-    console.log('user connected', io.id)
 })
 
 app.use(function (req, res, next) {
@@ -58,6 +56,15 @@ app.use(function (req, res, next) {
 });
 app.use(express.json())
 
+app.get('/rooms/:id', (req, res) => {
+    roomId = req.params.id
+    if(rooms[roomId]){
+        res.send(rooms[roomId])
+    }else{
+        res.send('New room')
+    }
+    
+});
 app.get('/rooms', (req, res) => {
     res.send(rooms)
 });
