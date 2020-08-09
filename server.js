@@ -4,34 +4,78 @@ const server = require('http').Server(app)
 const socket = require('socket.io')(server);
 
 
+// let rooms = new Map
+let rooms = { '1': { 'users': [{ '1': '52352' }, { '3': '5274352' }, { '2': '5232352' }], 'messages': [] }, '2': { 'users': [{ '1': '52352' }, { '3': '5274352' }, { '2': '5232352' }], 'messages': [] } }
 
+socket.on('connection', (io) => {
+    io.on('JOIN', (data) => {
+        io.join(data.id)
+        const roomObject = data
+        if (rooms.hasOwnProperty(roomObject.id)) {
+            // let users = Array.from(rooms[roomObject.id].users)
+            let users = Array.from(rooms[roomObject.id].users)
+            let userObject = {}
+            userObject[roomObject.username] = io.id
+            users[users.length] = userObject
+            rooms[roomObject.id].users = users
 
-
-
-
-const rooms = new Map()
-
-socket.on('connection', (socket) => {
-    console.log('user connected',socket.id)
+        } else {
+            let users = []
+            let userObject = {}
+            userObject[roomObject.username] = io.id
+            users.push(userObject)
+            let messages = []
+            rooms[roomObject.id] = {users,messages}
+            rooms[roomObject.id].users = users
+        }
+        const currentRoomUsers = rooms[roomObject.id].users
+        io.to(roomObject.id).broadcast.emit('USER JOINED', currentRoomUsers)
+        console.log(rooms)
+    })
+    
+    console.log('user connected', io.id)
 })
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
-  });
+});
+app.use(express.json())
 
-app.get('/rooms', (req,res)=>{
-    res.json(rooms)
+app.get('/rooms', (req, res) => {
+    res.send(rooms)
 });
 
-app.post('/rooms', (req,res)=>{
-    console.log(res)
+app.post('/rooms', (req, res) => {
+    // const roomObject = req.body
+    // if (rooms.hasOwnProperty(roomObject.id)) {
+    //     // let users = Array.from(rooms[roomObject.id].users)
+    //     let users = Array.from(rooms[roomObject.id].users)
+    //     let userObject = {}
+    //     userObject[roomObject.username] = 'asdadasdas'
+    //     users[users.length] = userObject
+    //     rooms[roomObject.id].users = users
+
+    // } else {
+    //     let users = []
+    //     let userObject = {}
+    //     userObject[roomObject.username] = 'asdadasdas'
+    //     users.push(userObject)
+    //     rooms[roomObject.id] = users
+    // }
+
+    
+    res.json()
+});
+
+app.post('/auth', (req, res) => {
+    console.log('result:', req.body)
     res.send()
 });
 
-server.listen(5050,(error)=>{
-    if(error){
+server.listen(5050, (error) => {
+    if (error) {
         throw Error(error)
     }
     console.log('Сервер запущен')
